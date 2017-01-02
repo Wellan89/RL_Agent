@@ -3,41 +3,63 @@ import os
 import sys
 from config import Config
 
-def new_tmux_cmd(session, window_name, cmd):
-	if isinstance(cmd, (list, tuple)):
-		cmd = " ".join(str(v) for v in cmd)
-	return name, "tmux send-keys -t {}:{} '{}' Enter".format(session, window_name, cmd)
+class CommandsManager:
+	def __init__(self, session_name):
+		self.machines_windows = {}
+		self.session_name = session_name
+		self.cmds = []
+
+	def add_cmd(self, machine, window, cmd):
+		if isinstance(cmd, (list, tuple)):
+			cmd = " ".join(str(v) for v in cmd)
+
+		machine = machine.split(":")[0]
+		if machine == "127.0.0.1":
+			machine = "localhost"
+
+		if machine != "localhost":
+			self.cmds.append("ssh {}".format(machine))
+
+		if window != None:
+			known_windows = self.machines_windows.get(window)
+			if known_windows is None:
+				self.cmds.append("tmux kill-session -t {}".format(self.session_name))
+				self.cmds.append("tmux new-session -s {} -n {} -d".format(self.session_name, window))
+				self.machines_windows[machine] = [window]
+			else:
+				if window not in known_windows:
+					self.cmds.append("tmux new-window -t {} -n {}".format(self.session_name, window))
+					self.machines_windows[machine].append(window)
+
+			self.cmds.append("tmux send-keys -t {}:{} '{}' Enter".format(self.session_name, window, cmd))
+			self.cmds.append("sleep 1")
+		else:
+			self.cmds.append(cmd)
+
+		if machine != "localhost":
+			self.cmds.append("exit")
+
+	def get_cmds(self):
+		return self.cmds
 
 def create_tmux_commands(config):
 	# for launching the TF workers and for launching tensorboard
-	base_cmd = [
+	base_tf_cmd = [
 		'CUDA_VISIBLE_DEVICES=', sys.executable, 'worker.py',
 		'--config-file', config.config_file]
 
-	cmds_map = [new_tmux_cmd(config.tmux_session, "ps", base_cmd + ["--job-name", "ps"])]
+	cmds = CommandsManager(config.tmux_session)
+	cmds.add_cmd("localhost", None, "mkdir -p {}".format(config.log_dir))
+
+	cmds.add_cmd(config.ps_server, "ps", base_tf_cmd + ["--job-name", "ps"])
 	for i in range(len(config.workers)):
-		cmds_map += [new_tmux_cmd(config.tmux_session,
-			"w-{}".format(i), base_cmd + ["--job-name", "worker", "--task", str(i), "--worker-remote", config.remotes[i]])]
+		cmds.add_cmd(config.workers[i], "worker{}".format(i),
+			base_tf_cmd + ["--job-name", "worker", "--task", str(i), "--worker-remote", config.remotes[i]])
 
-	cmds_map += [new_tmux_cmd(config.tmux_session, "tb", ["tensorboard --logdir {} --port {}".format(config.log_dir, config.tensorboard_port)])]
-	cmds_map += [new_tmux_cmd(config.tmux_session, "htop", ["htop"])]
+	cmds.add_cmd("localhost", "tb",
+		"{} -m tensorflow.tensorboard --logdir {} --port {}".format(sys.executable, config.log_dir, config.tensorboard_port))
 
-	windows = [v[0] for v in cmds_map]
-
-	cmds = [
-		"mkdir -p {}".format(config.log_dir),
-		"tmux kill-session -t {}".format(config.tmux_session),
-		"tmux new-session -s {} -n {} -d".format(config.tmux_session, windows[0]),
-	]
-	for w in windows[1:]:
-		cmds += ["tmux new-window -t {} -n {}".format(config.tmux_session, w)]
-	cmds += ["sleep 1"]
-	for window, cmd in cmds_map:
-		cmds += [cmd]
-
-	return cmds
-
-
+	return cmds.get_cmds()
 
 def run():
 	config = Config(False)

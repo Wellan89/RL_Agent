@@ -1,5 +1,8 @@
 import argparse
-import configparser
+try:
+	from configparser import ConfigParser
+except ImportError:
+	from ConfigParser import ConfigParser
 import os
 
 class Config:
@@ -23,7 +26,7 @@ class Config:
 									 'rewarder to use (e.g. --worker-remote vnc://localhost:5900+15900)')
 
 		args = args_parser.parse_args()
-		config = configparser.ConfigParser({
+		config = ConfigParser({
 			'env_id': 'PongDeterministic-v3',
 			'ps_server': 'localhost:12222',
 			'num_workers': '1',
