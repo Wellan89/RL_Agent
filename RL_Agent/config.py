@@ -5,6 +5,18 @@ except ImportError:
 	from ConfigParser import ConfigParser
 import os
 
+def ping(host):
+	"""
+	Returns True if host responds to a ping request
+	"""
+
+	# Ping parameters as function of OS
+	ping_str = "-n 1" if platform.system().lower() == "windows" else "-c 1"
+
+	# Ping
+	host = host.split(":")[0]
+	return os.system("ping " + ping_str + " " + host) == 0
+
 class Config:
 	def __init__(self, is_worker):
 		args_parser = argparse.ArgumentParser(description='Run commands')
@@ -31,14 +43,18 @@ class Config:
 			'ps_server': 'localhost:12222',
 			'num_workers': '1',
 			'worker0': 'localhost:12223',
-			'tensorboard_port': '12345'
+			'tensorboard_port': '12345',
+			'cluster_file': ''
 			})
 		config.read(args.config_file)
+		if config.get('cluster', 'cluster_file') != '':
+			config.read(config.get('cluster', 'cluster_file'))
 
 		self.config_file = args.config_file
 		self.env_id = config.get('environment', 'env_id')
 
 		self.ps_server = config.get('cluster', 'ps_server')
+		assert(ping(ps_server))
 		self.workers = [config.get('cluster', 'worker{}'.format(i)) for i in range(config.getint('cluster', 'num_workers'))]
 		self.tensorboard_port = config.get('cluster', 'tensorboard_port')
 
@@ -52,6 +68,10 @@ class Config:
 			else:
 				self.remotes = remotes.split(',')
 				assert(len(self.remotes) == len(self.workers))
+
+			# Check we can reach all specified workers
+			for worker in self.workers:
+				assert(ping(worker))
 		else:
 			self.task = args.task
 			self.job_name = args.job_name

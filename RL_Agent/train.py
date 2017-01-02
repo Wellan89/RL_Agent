@@ -18,7 +18,7 @@ class CommandsManager:
 			machine = "localhost"
 
 		if machine != "localhost":
-			self.cmds.append("ssh {}".format(machine))
+			self.cmds.append("ssh -o StrictHostKeyChecking=no {}".format(machine))
 
 		if window != None:
 			known_windows = self.machines_windows.get(window)

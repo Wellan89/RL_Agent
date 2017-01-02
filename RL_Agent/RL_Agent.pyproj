@@ -32,6 +32,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="envs.py" />
+    <Compile Include="generate_cluster_ensimag.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="model.py" />
     <Compile Include="train.py" />
     <Compile Include="worker.py" />
