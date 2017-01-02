@@ -7,6 +7,7 @@ import logging
 import os
 from a3c import A3C
 from envs import create_env
+from config import Config
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,9 +19,9 @@ class FastSaver(tf.train.Saver):
 		super(FastSaver, self).save(sess, save_path, global_step, latest_filename,
 									meta_graph_suffix, False)
 
-def run(args, server):
-	env = create_env(args.env_id, client_id=str(args.task), remotes=args.remotes)
-	trainer = A3C(env, args.task)
+def run(config, server):
+	env = create_env(config.env_id, client_id=str(config.task), remotes=config.worker_remote)
+	trainer = A3C(env, config.task)
 
 	# Variable names that start with "local" are not saved in checkpoints.
 	variables_to_save = [v for v in tf.all_variables() if not v.name.startswith("local")]
@@ -32,11 +33,11 @@ def run(args, server):
 		logger.info("Initializing all parameters.")
 		ses.run(init_all_op)
 
-	config = tf.ConfigProto(device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(args.task)])
-	logdir = os.path.join(args.log_dir, 'train')
-	summary_writer = tf.train.SummaryWriter(logdir + "_%d" % args.task)
-	logger.info("Events directory: %s_%s", logdir, args.task)
-	sv = tf.train.Supervisor(is_chief=(args.task == 0),
+	tf_config = tf.ConfigProto(device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(config.task)])
+	logdir = os.path.join(config.log_dir, 'train')
+	summary_writer = tf.train.SummaryWriter("{}_{}".format(config.log_dir, config.task))
+	logger.info("Events directory: {}_{}".format(config.log_dir, config.task))
+	sv = tf.train.Supervisor(is_chief=(config.task == 0),
 							 logdir=logdir,
 							 saver=saver,
 							 summary_op=None,
@@ -53,7 +54,7 @@ def run(args, server):
 	logger.info(
 		"Starting session. If this hangs, we're mostly likely waiting to connect to the parameter server. " +
 		"One common cause is that the parameter server DNS name isn't resolving yet, or is misspecified.")
-	with sv.managed_session(server.target, config=config) as sess, sess.as_default():
+	with sv.managed_session(server.target, config=tf_config) as sess, sess.as_default():
 		trainer.start(sess, summary_writer)
 		global_step = sess.run(trainer.global_step)
 		logger.info("Starting training at step=%d", global_step)
@@ -65,25 +66,13 @@ def run(args, server):
 	sv.stop()
 	logger.info('reached %s steps. worker stopped.', global_step)
 
-def cluster_spec(num_workers, num_ps):
+def cluster_spec(config):
 	"""
 More tensorflow setup for data parallelism
 """
 	cluster = {}
-	port = 12222
-
-	all_ps = []
-	host = '127.0.0.1'
-	for _ in range(num_ps):
-		all_ps.append('{}:{}'.format(host, port))
-		port += 1
-	cluster['ps'] = all_ps
-
-	all_workers = []
-	for _ in range(num_workers):
-		all_workers.append('{}:{}'.format(host, port))
-		port += 1
-	cluster['worker'] = all_workers
+	cluster['ps'] = [config.ps_server]
+	cluster['worker'] = config.workers
 	return cluster
 
 def main(_):
@@ -91,31 +80,18 @@ def main(_):
 Setting up Tensorflow for data parallel work
 """
 
-	parser = argparse.ArgumentParser(description=None)
-	parser.add_argument('-v', '--verbose', action='count', dest='verbosity', default=0, help='Set verbosity.')
-	parser.add_argument('--task', default=0, type=int, help='Task index')
-	parser.add_argument('--job-name', default="worker", help='worker or ps')
-	parser.add_argument('--num-workers', default=1, type=int, help='Number of workers')
-	parser.add_argument('--log-dir', default="/tmp/pong", help='Log directory path')
-	parser.add_argument('--env-id', default="PongDeterministic-v3", help='Environment id')
-	parser.add_argument('-r', '--remotes', default=None,
-						help='References to environments to create (e.g. -r 20), '
-							 'or the address of pre-existing VNC servers and '
-							 'rewarders to use (e.g. -r vnc://localhost:5900+15900,vnc://localhost:5901+15901)')
+	config = Config(True)
 
-	args = parser.parse_args()
-	spec = cluster_spec(args.num_workers, 1)
+	spec = cluster_spec(config)
 	cluster = tf.train.ClusterSpec(spec).as_cluster_def()
 
-
-	if args.job_name == "worker":
-		server = tf.train.Server(cluster, job_name="worker", task_index=args.task,
+	if config.job_name == "worker":
+		server = tf.train.Server(cluster, job_name="worker", task_index=config.task,
 								 config=tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=2))
-		run(args, server)
+		run(config, server)
 	else:
-		server = tf.train.Server(cluster, job_name="ps", task_index=args.task,
+		server = tf.train.Server(cluster, job_name="ps", task_index=config.task,
 								 config=tf.ConfigProto(device_filters=["/job:ps"]))
-
 		server.join()
 
 if __name__ == "__main__":
