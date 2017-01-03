@@ -263,7 +263,7 @@ server.
 		rollout = self.pull_batch_from_queue()
 		batch = process_rollout(rollout, gamma=0.99, lambda_=1.0)
 
-		should_compute_summary = self.task == 0 and self.local_steps % 11 == 0 and summary_writer is not None
+		should_compute_summary = self.task == 0 and self.local_steps % 11 == 0 and self.summary_writer is not None
 
 		if should_compute_summary:
 			fetches = [self.summary_op, self.train_op, self.global_step]

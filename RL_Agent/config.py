@@ -19,7 +19,7 @@ def ping(host):
 	return os.system("ping " + ping_str + " " + host) == 0
 
 class Config:
-	def __init__(self, is_worker):
+	def __init__(self, is_worker, check_config=True):
 		args_parser = argparse.ArgumentParser(description='Run commands')
 		args_parser.add_argument('-c', '--config-file', type=str, default='pong.cfg',
 							help='Configuration file')
@@ -55,7 +55,7 @@ class Config:
 		self.env_id = config.get('environment', 'env_id')
 
 		self.ps_server = config.get('cluster', 'ps_server')
-		assert(ping(self.ps_server))
+		assert(not check_config or ping(self.ps_server))
 		self.workers = [config.get('cluster', 'worker{}'.format(i)) for i in range(config.getint('cluster', 'num_workers'))]
 		self.tensorboard_port = config.get('cluster', 'tensorboard_port')
 
@@ -68,13 +68,13 @@ class Config:
 				self.remotes = ['1'] * len(self.workers)
 			else:
 				self.remotes = remotes.split(',')
-				assert(len(self.remotes) == len(self.workers))
+				assert(not check_config or len(self.remotes) == len(self.workers))
 
 			# Check we can reach all specified workers
 			for worker in self.workers:
-				assert(ping(worker))
+				assert(not check_config or ping(worker))
 		else:
 			self.task = args.task
 			self.job_name = args.job_name
-			assert(self.job_name == "worker" or self.job_name == "ps" or self.job_name == "visualizer")
+			assert(not check_config or self.job_name == "worker" or self.job_name == "ps" or self.job_name == "visualizer")
 			self.worker_remote = args.worker_remote

@@ -60,9 +60,10 @@ def run(config, server):
 		"Starting session. If this hangs, we're mostly likely waiting to connect to the parameter server. " +
 		"One common cause is that the parameter server DNS name isn't resolving yet, or is misspecified.")
 	with sv.managed_session(server.target, config=tf_config) as sess, sess.as_default():
+		sess.run(trainer.sync)	# copy weights from shared to local
 		trainer.start(sess, summary_writer, is_visualizer)
 		global_step = sess.run(trainer.global_step)
-		logger.info("Starting visualization at step=%d", global_step)
+		logger.info("Starting {} at step=%d".format("visualization" if is_visualizer else "training"), global_step)
 		while not sv.should_stop() and (not num_global_steps or global_step < num_global_steps or is_visualizer):
 			if not is_visualizer:
 				trainer.process(sess)
