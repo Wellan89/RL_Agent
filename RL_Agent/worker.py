@@ -39,8 +39,9 @@ def run(config, server):
 
 	tf_config = tf.ConfigProto(device_filters=["/job:ps", "/job:worker/task:{}/cpu:0".format(config.task)])
 	logdir = os.path.join(config.log_dir, 'train')
-	summary_writer = tf.train.SummaryWriter("{}_{}".format(config.log_dir, config.task)) if not is_visualizer else None
-	logger.info("Events directory: {}_{}".format(config.log_dir, config.task))
+	summary_dir = "{}/train_{}".format(config.log_dir, config.task)
+	summary_writer = tf.train.SummaryWriter(summary_dir) if not is_visualizer else None
+	logger.info("Events directory: {}".format(summary_dir))
 	sv = tf.train.Supervisor(is_chief=(config.task == 0) if not is_visualizer else False,
 							 logdir=logdir,
 							 saver=saver,
