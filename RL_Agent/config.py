@@ -31,7 +31,7 @@ class Config:
 									 'rewarders to use (e.g. -r vnc://localhost:5900+15900,vnc://localhost:5901+15901).')
 		else:
 			parser.add_argument('--task', type=int, default=0, help='Task index')
-			parser.add_argument('--job-name', type=str, default="worker", help='worker or ps')
+			parser.add_argument('--job-name', type=str, default="worker", help='worker, ps or visualizer')
 			parser.add_argument('--worker-remote', type=str, default=None,
 								help='References to environments to create (e.g. --worker-remote 20), '
 									 'or the address of pre-existing VNC server and '
@@ -75,5 +75,5 @@ class Config:
 		else:
 			self.task = args.task
 			self.job_name = args.job_name
-			assert(self.job_name == "worker" or self.job_name == "ps")
+			assert(self.job_name == "worker" or self.job_name == "ps" or self.job_name == "visualizer")
 			self.worker_remote = args.worker_remote
