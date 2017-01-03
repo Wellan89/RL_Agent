@@ -1,4 +1,5 @@
 import argparse
+import multiprocessing
 import os
 import platform
 
@@ -23,15 +24,20 @@ def main():
 
 	args = parser.parse_args()
 
+	pool = multiprocessing.Pool()
+	machines = ["ensipc{}".format(i) for i in range(args.first_machine_idx, args.last_machine_idx + 1)]
+	running_machines = pool.map(ping, machines)
+	pool.close()
+	pool.join()
+
 	worker_idx = 0
 	with open("cluster_ensimag_generated.cfg", "w") as file:
 		file.write("[cluster]\n")
-		for i in range(args.first_machine_idx, args.last_machine_idx + 1):
-			machine = "ensipc{}".format(i)
-			if ping(machine):
+		for machine, is_running in zip(machines, running_machines):
+			if is_running:
 				if worker_idx == 0:
-					file.write("ps_server: {}:{}\n".format(machine, args.port_base_idx - 1))
-				for port in range(args.port_base_idx, args.port_base_idx + args.workers_per_machine):
+					file.write("ps_server: {}:{}\n".format(machine, args.port_base_idx))
+				for port in range(args.port_base_idx + 1, args.port_base_idx + 1 + args.workers_per_machine):
 					file.write("worker{}: {}:{}\n".format(worker_idx, machine, port))
 					worker_idx += 1
 

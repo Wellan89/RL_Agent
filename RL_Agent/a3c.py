@@ -6,6 +6,7 @@ from model import LSTMPolicy
 import six.moves.queue as queue
 import scipy.signal
 import threading
+import cv2
 
 
 def discount(x, gamma):
@@ -81,9 +82,10 @@ that would constantly interact with the environment and tell it what to do.  Thi
 		self.sess = None
 		self.summary_writer = None
 
-	def start_runner(self, sess, summary_writer):
+	def start_runner(self, sess, summary_writer, is_visualizer):
 		self.sess = sess
 		self.summary_writer = summary_writer
+		self.is_visualizer = is_visualizer
 		self.start()
 
 	def run(self):
@@ -91,18 +93,20 @@ that would constantly interact with the environment and tell it what to do.  Thi
 			self._run()
 
 	def _run(self):
-		rollout_provider = env_runner(self.env, self.policy, self.num_local_steps, self.summary_writer)
+		rollout_provider = env_runner(self.env, self.policy, self.num_local_steps, self.summary_writer, self.is_visualizer)
 		while True:
 			# the timeout variable exists because apparently, if one worker dies, the other workers
 			# won't die with it, unless the timeout is set to some large number.  This is an empirical
 			# observation.
 
-			self.queue.put(next(rollout_provider), timeout=600.0)
+			rollout = next(rollout_provider)
+			if not self.is_visualizer:
+				self.queue.put(rollout, timeout=600.0)
 
 
 			
 
-def env_runner(env, policy, num_local_steps, summary_writer):
+def env_runner(env, policy, num_local_steps, summary_writer, is_visualizer):
 	"""
 The logic of the thread runner.  In brief, it constantly keeps on running
 the policy, and as long as the rollout exceeds a certain length, the therad 
@@ -122,6 +126,8 @@ runner appends the policy to the queue.
 			action, value_, features = fetched[0], fetched[1], fetched[2:]
 			# argmax to convert from one-hot
 			state, reward, terminal, info = env.step(action.argmax())
+			if is_visualizer:
+				cv2.imshow("Visualization", state)
 
 			# collect the experience
 			rollout.add(last_state, action, reward, value_, terminal, last_features)
@@ -131,7 +137,7 @@ runner appends the policy to the queue.
 			last_state = state
 			last_features = features
 
-			if info:
+			if info and summary_writer is not None:
 				summary = tf.Summary()
 				for k, v in info.items():
 					summary.value.add(tag=k, simple_value=float(v))
@@ -152,7 +158,7 @@ runner appends the policy to the queue.
 		if not terminal_end:
 			rollout.r = policy.value(last_state, *last_features)
 
-		# once we have enough experience, yield it, and have the TheradRunner place it on a queue
+		# once we have enough experience, yield it, and have the ThreadRunner place it on a queue
 		yield rollout
 
 class A3C(object):
@@ -230,8 +236,8 @@ should be computed.
 			self.summary_writer = None
 			self.local_steps = 0
 
-	def start(self, sess, summary_writer):
-		self.runner.start_runner(sess, summary_writer)
+	def start(self, sess, summary_writer, is_visualizer):
+		self.runner.start_runner(sess, summary_writer, is_visualizer)
 		self.summary_writer = summary_writer
 
 	def pull_batch_from_queue(self):
@@ -257,7 +263,7 @@ server.
 		rollout = self.pull_batch_from_queue()
 		batch = process_rollout(rollout, gamma=0.99, lambda_=1.0)
 
-		should_compute_summary = self.task == 0 and self.local_steps % 11 == 0
+		should_compute_summary = self.task == 0 and self.local_steps % 11 == 0 and summary_writer is not None
 
 		if should_compute_summary:
 			fetches = [self.summary_op, self.train_op, self.global_step]
