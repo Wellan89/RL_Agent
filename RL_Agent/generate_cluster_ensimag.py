@@ -29,6 +29,8 @@ def main():
 		for i in range(args.first_machine_idx, args.last_machine_idx + 1):
 			machine = "ensipc{}".format(i)
 			if ping(machine):
+				if worker_idx == 0:
+					file.write("ps_server: {}:{}\n".format(machine, args.port_base_idx - 1))
 				for port in range(args.port_base_idx, args.port_base_idx + args.workers_per_machine):
 					file.write("worker{}: {}:{}\n".format(worker_idx, machine, port))
 					worker_idx += 1

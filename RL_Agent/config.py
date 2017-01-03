@@ -4,6 +4,7 @@ try:
 except ImportError:
 	from ConfigParser import ConfigParser
 import os
+import platform
 
 def ping(host):
 	"""
@@ -30,9 +31,9 @@ class Config:
 								help='The address of pre-existing VNC servers and '
 									 'rewarders to use (e.g. -r vnc://localhost:5900+15900,vnc://localhost:5901+15901).')
 		else:
-			parser.add_argument('--task', type=int, default=0, help='Task index')
-			parser.add_argument('--job-name', type=str, default="worker", help='worker or ps')
-			parser.add_argument('--worker-remote', type=str, default=None,
+			args_parser.add_argument('--task', type=int, default=0, help='Task index')
+			args_parser.add_argument('--job-name', type=str, default="worker", help='worker or ps')
+			args_parser.add_argument('--worker-remote', type=str, default=None,
 								help='References to environments to create (e.g. --worker-remote 20), '
 									 'or the address of pre-existing VNC server and '
 									 'rewarder to use (e.g. --worker-remote vnc://localhost:5900+15900)')
@@ -54,7 +55,7 @@ class Config:
 		self.env_id = config.get('environment', 'env_id')
 
 		self.ps_server = config.get('cluster', 'ps_server')
-		assert(ping(ps_server))
+		assert(ping(self.ps_server))
 		self.workers = [config.get('cluster', 'worker{}'.format(i)) for i in range(config.getint('cluster', 'num_workers'))]
 		self.tensorboard_port = config.get('cluster', 'tensorboard_port')
 
