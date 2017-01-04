@@ -41,6 +41,7 @@ class Config:
 		args = args_parser.parse_args()
 		config = ConfigParser({
 			'env_id': 'PongDeterministic-v3',
+			'model_name': 'universe_model',
 			'ps_server': 'localhost:12222',
 			'num_workers': '1',
 			'worker0': 'localhost:12223',
@@ -53,6 +54,7 @@ class Config:
 
 		self.config_file = args.config_file
 		self.env_id = config.get('environment', 'env_id')
+		self.model_name = config.get('model', 'model_name')
 
 		self.ps_server = config.get('cluster', 'ps_server')
 		assert(not check_config or ping(self.ps_server))

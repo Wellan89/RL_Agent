@@ -25,7 +25,7 @@ def run(config, server):
 		config.task = 0
 
 	env = create_env(config.env_id, client_id=str(config.task), remotes=config.worker_remote)
-	trainer = A3C(env, config.task)
+	trainer = A3C(config, env, config.task)
 
 	# Variable names that start with "local" are not saved in checkpoints.
 	variables_to_save = [v for v in tf.global_variables() if not v.name.startswith("local")]

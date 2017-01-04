@@ -2,9 +2,9 @@ from __future__ import print_function
 from collections import namedtuple
 import numpy as np
 import tensorflow as tf
-from model import LSTMPolicy
 import six.moves.queue as queue
 import scipy.signal
+import importlib
 import time
 import threading
 import cv2
@@ -166,7 +166,7 @@ runner appends the policy to the queue.
 		yield rollout
 
 class A3C(object):
-	def __init__(self, env, task):
+	def __init__(self, config, env, task):
 		"""
 An implementation of the A3C algorithm that is reasonably well-tuned for the VNC environments.
 Below, we will have a modest amount of complexity due to the way TensorFlow handles data parallelism.
@@ -174,18 +174,20 @@ But overall, we'll define the model, specify its inputs, and describe how the po
 should be computed.
 """
 
+		model = importlib.import_module(config.model_name)
+
 		self.env = env
 		self.task = task
 		worker_device = "/job:worker/task:{}/cpu:0".format(task)
 		with tf.device(tf.train.replica_device_setter(1, worker_device=worker_device)):
 			with tf.variable_scope("global"):
-				self.network = LSTMPolicy(env.observation_space.shape, env.action_space.n)
+				self.network = model.LSTMPolicy(env.observation_space.shape, env.action_space.n)
 				self.global_step = tf.get_variable("global_step", [], tf.int32, initializer=tf.zeros_initializer,
 												   trainable=False)
 
 		with tf.device(worker_device):
 			with tf.variable_scope("local"):
-				self.local_network = pi = LSTMPolicy(env.observation_space.shape, env.action_space.n)
+				self.local_network = pi = model.LSTMPolicy(env.observation_space.shape, env.action_space.n)
 				pi.global_step = self.global_step
 
 			self.ac = tf.placeholder(tf.float32, [None, env.action_space.n], name="ac")
