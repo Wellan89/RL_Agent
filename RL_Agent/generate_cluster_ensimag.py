@@ -1,5 +1,5 @@
 import argparse
-import multiprocessing
+import multiprocessing.dummy
 import os
 import platform
 
@@ -24,7 +24,7 @@ def main():
 
 	args = parser.parse_args()
 
-	pool = multiprocessing.Pool()
+	pool = multiprocessing.dummy.Pool(processes=(args.last_machine_idx + 1 - args.first_machine_idx))
 	machines = ["ensipc{}".format(i) for i in range(args.first_machine_idx, args.last_machine_idx + 1)]
 	running_machines = pool.map(ping, machines)
 	pool.close()

@@ -5,6 +5,7 @@ import tensorflow as tf
 from model import LSTMPolicy
 import six.moves.queue as queue
 import scipy.signal
+import time
 import threading
 import cv2
 
@@ -104,7 +105,7 @@ that would constantly interact with the environment and tell it what to do.  Thi
 				self.queue.put(rollout, timeout=600.0)
 
 
-			
+
 
 def env_runner(env, policy, num_local_steps, summary_writer, is_visualizer):
 	"""
@@ -127,7 +128,10 @@ runner appends the policy to the queue.
 			# argmax to convert from one-hot
 			state, reward, terminal, info = env.step(action.argmax())
 			if is_visualizer:
-				cv2.imshow("Visualization", state)
+				visu = cv2.resize(state, None, fx=8.0, fy=8.0)
+				cv2.imshow("Visualization", visu)
+				cv2.waitKey(1)
+				time.sleep(0.02)
 
 			# collect the experience
 			rollout.add(last_state, action, reward, value_, terminal, last_features)

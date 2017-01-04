@@ -33,7 +33,6 @@ class CommandsManager:
 
 			window_idx = self.machines_windows.get(machine).index(window)
 			self.cmds.append("tmux send-keys -t {}:{} '{}' Enter".format(self.session_name, window_idx, cmd))
-			self.cmds.append("sleep 1")
 		else:
 			self.cmds.append(cmd)
 
