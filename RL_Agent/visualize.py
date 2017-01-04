@@ -16,7 +16,7 @@ def create_tmux_commands(config):
 	return cmds.get_cmds()
 
 def run():
-	config = Config(False)
+	config = Config(False, False)
 
 	cmds = create_tmux_commands(config)
 	print("\n".join(cmds))
