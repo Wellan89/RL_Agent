@@ -90,3 +90,7 @@ ENV/
 
 # Visual Studio
 .vs/
+
+RL_Agent/clusters/ensimag_generated_*.cfg
+RL_Agent/logs/*
+

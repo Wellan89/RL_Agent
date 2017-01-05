@@ -174,7 +174,7 @@ But overall, we'll define the model, specify its inputs, and describe how the po
 should be computed.
 """
 
-		model = importlib.import_module(config.model_name)
+		model = importlib.import_module("model." + config.model_name)
 
 		self.env = env
 		self.task = task

@@ -52,7 +52,7 @@ class Config:
 			})
 		config.read(args.config_file)
 		if config.get('cluster', 'cluster_file') != '':
-			config.read(config.get('cluster', 'cluster_file'))
+			config.read('clusters/' + config.get('cluster', 'cluster_file'))
 
 		self.config_file = args.config_file
 		self.env_id = config.get('environment', 'env_id')
