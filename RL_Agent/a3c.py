@@ -181,13 +181,13 @@ should be computed.
 		worker_device = "/job:worker/task:{}/cpu:0".format(task)
 		with tf.device(tf.train.replica_device_setter(1, worker_device=worker_device)):
 			with tf.variable_scope("global"):
-				self.network = model.LSTMPolicy(env.observation_space.shape, env.action_space.n)
+				self.network = model.LSTMPolicy(config, env.observation_space.shape, env.action_space.n)
 				self.global_step = tf.get_variable("global_step", [], tf.int32, initializer=tf.zeros_initializer,
 												   trainable=False)
 
 		with tf.device(worker_device):
 			with tf.variable_scope("local"):
-				self.local_network = pi = model.LSTMPolicy(env.observation_space.shape, env.action_space.n)
+				self.local_network = pi = model.LSTMPolicy(config, env.observation_space.shape, env.action_space.n)
 				pi.global_step = self.global_step
 
 			self.ac = tf.placeholder(tf.float32, [None, env.action_space.n], name="ac")

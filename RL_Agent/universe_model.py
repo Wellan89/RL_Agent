@@ -41,7 +41,7 @@ def categorical_sample(logits, d):
 	return tf.one_hot(value, d)
 
 class LSTMPolicy(object):
-	def __init__(self, ob_space, ac_space):
+	def __init__(self, config, ob_space, ac_space):
 		self.x = x = tf.placeholder(tf.float32, [None] + list(ob_space))
 
 		for i in range(4):
@@ -49,7 +49,7 @@ class LSTMPolicy(object):
 		# introduce a "fake" batch dimension of 1 after flatten so that we can do LSTM over time dim
 		x = tf.expand_dims(flatten(x), [0])
 
-		size = 256
+		size = config.model_layers_size[0]
 		lstm = tf.nn.rnn_cell.BasicLSTMCell(size, state_is_tuple=True)
 		self.state_size = lstm.state_size
 		step_size = tf.shape(self.x)[:1]

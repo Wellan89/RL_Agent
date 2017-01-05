@@ -42,6 +42,7 @@ class Config:
 		config = ConfigParser({
 			'env_id': 'PongDeterministic-v3',
 			'model_name': 'universe_model',
+			'model_layers_size': '256',
 			'ps_server': 'localhost:12222',
 			'num_workers': '1',
 			'worker0': 'localhost:12223',
