@@ -54,7 +54,7 @@ def run(config, server):
 							 save_model_secs=30 if not is_visualizer else None,
 							 save_summaries_secs=30 if not is_visualizer else None)
 
-	num_global_steps = 100000000
+	num_global_steps = 0
 
 	logger.info(
 		"Starting session. If this hangs, we're mostly likely waiting to connect to the parameter server. " +

@@ -19,8 +19,8 @@ def main():
 	parser = argparse.ArgumentParser(description='Run commands')
 	parser.add_argument('-n', '--workers-per-machine', type=int, default=4)
 	parser.add_argument('-p', '--port-base-idx', type=int, default=12500)
-	parser.add_argument('-f', '--first-machine-idx', type=int, default=300)
-	parser.add_argument('-l', '--last-machine-idx', type=int, default=400)
+	parser.add_argument('-f', '--first-machine-idx', type=int, default=302)
+	parser.add_argument('-l', '--last-machine-idx', type=int, default=335)
 
 	args = parser.parse_args()
 
