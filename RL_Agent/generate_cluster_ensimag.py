@@ -17,13 +17,14 @@ def ping(host):
 
 def main():
 	parser = argparse.ArgumentParser(description='Run commands')
-	parser.add_argument('-c', '--config-file', type=str, default='')
+	parser.add_argument('-c', '--config-file', type=str)
 	parser.add_argument('-n', '--workers-per-machine', type=int, default=4)
 	parser.add_argument('-p', '--port-base-idx', type=int, default=12500)
 	parser.add_argument('-f', '--first-machine-idx', type=int, default=302)
 	parser.add_argument('-l', '--last-machine-idx', type=int, default=335)
 
 	args = parser.parse_args()
+	assert(args.config_file is not None)
 
 	pool = multiprocessing.dummy.Pool(processes=(args.last_machine_idx + 1 - args.first_machine_idx))
 	machines = ["ensipc{}".format(i) for i in range(args.first_machine_idx, args.last_machine_idx + 1)]
@@ -31,9 +32,7 @@ def main():
 	pool.close()
 	pool.join()
 
-	filename = "cluster_ensimag_generated.cfg"
-	if args.config_file != '':
-		filename = "cluster_ensimag_generated_" + os.path.splitext(args.config_file)[0] + ".cfg"
+	filename = "cluster_ensimag_generated_" + os.path.splitext(args.config_file)[0] + ".cfg"
 
 	worker_idx = 0
 	with open(filename, "w") as file:

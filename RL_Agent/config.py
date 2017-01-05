@@ -21,8 +21,7 @@ def ping(host):
 class Config:
 	def __init__(self, is_worker, check_config=True):
 		args_parser = argparse.ArgumentParser(description='Run commands')
-		args_parser.add_argument('-c', '--config-file', type=str, default='pong.cfg',
-							help='Configuration file')
+		args_parser.add_argument('-c', '--config-file', type=str, help='Configuration file')
 
 		if not is_worker:
 			args_parser.add_argument('-s', '--tmux-session', type=str, default='a3c',
@@ -39,9 +38,11 @@ class Config:
 									 'rewarder to use (e.g. --worker-remote vnc://localhost:5900+15900)')
 
 		args = args_parser.parse_args()
+		assert(args.config_file is not None)
 		config = ConfigParser({
-			'env_id': 'PongDeterministic-v3',
 			'model_name': 'universe_model',
+			'model_learning_rate': '0.0001',
+			'model_local_steps': '20',
 			'model_layers_size': '256',
 			'ps_server': 'localhost:12222',
 			'num_workers': '1',
@@ -57,6 +58,8 @@ class Config:
 		self.env_id = config.get('environment', 'env_id')
 
 		self.model_name = config.get('model', 'model_name')
+		self.model_learning_rate = config.getfloat('model', 'model_learning_rate')
+		self.model_local_steps = config.getint('model', 'model_local_steps')
 		self.model_layers_size = [int(s) for s in config.get('model', 'model_layers_size').split(',')]
 
 		self.ps_server = config.get('cluster', 'ps_server')

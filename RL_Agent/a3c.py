@@ -215,7 +215,7 @@ should be computed.
 			# on the one hand;  but on the other hand, we get less frequent parameter updates, which
 			# slows down learning.  In this code, we found that making local steps be much
 			# smaller than 20 makes the algorithm more difficult to tune and to get to work.
-			self.runner = RunnerThread(env, pi, 20)
+			self.runner = RunnerThread(env, pi, config.model_local_steps)
 
 
 			grads = tf.gradients(self.loss, pi.var_list)
@@ -237,7 +237,7 @@ should be computed.
 			inc_step = self.global_step.assign_add(tf.shape(pi.x)[0])
 
 			# each worker has a different set of adam optimizer parameters
-			opt = tf.train.AdamOptimizer(1e-4)
+			opt = tf.train.AdamOptimizer(config.model_learning_rate)
 			self.train_op = tf.group(opt.apply_gradients(grads_and_vars), inc_step)
 			self.summary_writer = None
 			self.local_steps = 0
