@@ -55,7 +55,9 @@ class Config:
 
 		self.config_file = args.config_file
 		self.env_id = config.get('environment', 'env_id')
+
 		self.model_name = config.get('model', 'model_name')
+		self.model_layers_size = [int(s) for s in config.get('model', 'model_layers_size').split(',')]
 
 		self.ps_server = config.get('cluster', 'ps_server')
 		assert(not check_config or ping(self.ps_server))
