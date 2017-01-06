@@ -32,7 +32,7 @@ def main():
 	pool.close()
 	pool.join()
 
-	filename = "clusters/ensimag_generated_" + os.path.splitext(args.config_file)[0] + ".cfg"
+	filename = "clusters/ensimag_generated_" + os.path.splitext(os.path.basename(args.config_file))[0] + ".cfg"
 
 	worker_idx = 0
 	with open(filename, "w") as file:
